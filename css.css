@@ -1,0 +1,68 @@
+/* OMC VR-OS | CSS KERNEL v3.2 
+   Diretriz: Cyber-Glass & Black Void
+*/
+
+:root {
+    --cyan: #00D4FF;
+    --cyan-glow: 0 0 15px rgba(0, 212, 255, 0.5);
+    --alert: #FF4B00;
+    --alert-glow: 0 0 20px rgba(255, 75, 0, 0.6);
+    --bg-panel: rgba(0, 10, 20, 0.92);
+    --glass-border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+/* Base: O Vazio Sistêmico */
+body {
+    margin: 0;
+    background-color: #000;
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+}
+
+/* Painéis de Vidro (UX Profundo) */
+.glass-panel {
+    background: var(--bg-panel);
+    border: var(--glass-border);
+    border-left: 4px solid var(--cyan);
+    box-shadow: var(--cyan-glow);
+    backdrop-filter: blur(10px);
+    padding: 15px;
+    pointer-events: auto;
+}
+
+/* Botões de Comando (Escalabilidade) */
+.btn-os {
+    background: transparent;
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    font-family: 'Orbitron', sans-serif;
+    padding: 10px 15px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-os:hover {
+    background: var(--cyan);
+    color: #000;
+    box-shadow: 0 0 20px var(--cyan);
+}
+
+/* Efeito de Glitch (Latência Crítica) */
+.latency-critical {
+    animation: jitter 0.1s infinite;
+    color: var(--alert) !important;
+    border-color: var(--alert) !important;
+}
+
+@keyframes jitter {
+    0% { transform: translate(0); }
+    33% { transform: translate(-2px, 2px); }
+    66% { transform: translate(2px, -2px); }
+    100% { transform: translate(0); }
+}
+
+/* Scrollbar Estilizada (Baixa Latência Visual) */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--cyan); box-shadow: var(--cyan-glow); }
