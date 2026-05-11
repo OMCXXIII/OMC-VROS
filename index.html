@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>OMC VR-OS — SENTINEL V2.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cyan: #00D4FF;
+  --cyan-dim: rgba(0,212,255,0.08);
+  --cyan-mid: rgba(0,212,255,0.18);
+  --cyan-glow: 0 0 14px rgba(0,212,255,0.6);
+  --orange: #FF4B00;
+  --orange-dim: rgba(255,75,0,0.12);
+  --gold: #FFB800;
+  --bg: #000000;
+  --mono: 'Share Tech Mono', monospace;
+  --display: 'Orbitron', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
+
+/* ── BACKGROUND LAYERS ── */
+#bg-grid {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(0,212,255,0.12) 1px, transparent 1px);
+  background-size: 52px 52px;
+}
+#scanline {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom, transparent 0, transparent 3px,
+    rgba(0,212,255,0.012) 3px, rgba(0,212,255,0.012) 4px
+  );
+}
+#clock-rings {
+  position: fixed; top: 50%; left: 50%; z-index: 1; pointer-events: none;
+}
+.cr {
+  position: absolute; border-radius: 50%; border: 1px solid var(--cyan);
+  transform: translate(-50%,-50%); animation: spin linear infinite;
+}
+.cr1 { width: 340px; height: 340px; opacity: 0.04; animation-duration: 22s; }
+.cr2 { width: 580px; height: 580px; opacity: 0.025; animation-duration: 38s; animation-direction: reverse; border-style: dashed; }
+.cr3 { width: 860px; height: 860px; opacity: 0.015; animation-duration: 65s; }
+.cr4 { width: 1200px; height: 1200px; opacity: 0.008; animation-duration: 90s; animation-direction: reverse; border-style: dotted; }
+@keyframes spin { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
+
+/* ── GLITCH LAYER ── */
+#glitch-layer {
+  position: fixed; inset: 0; z-index: 900; pointer-events: none;
+  display: none;
+}
+#glitch-layer.active {
+  display: block;
+  background: var(--orange-dim);
+  animation: glitch-anim 0.4s steps(1) 4;
+}
+@keyframes glitch-anim {
+  0%   { clip-path: inset(0 0 96% 0); opacity: 1; }
+  15%  { clip-path: inset(18% 0 55% 0); transform: skewX(-5deg) translateX(3px); }
+  30%  { clip-path: inset(60% 0 10% 0); transform: skewX(3deg) translateX(-2px); }
+  50%  { clip-path: inset(30% 0 40% 0); }
+  70%  { clip-path: inset(5% 0 85% 0); transform: skewX(-2deg); }
+  100% { clip-path: inset(0 0 96% 0); opacity: 0; }
+}
+
+/* ── FOCUS CLIPPING MASK ── */
+#focus-mask {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(0,0,0,0.88);
+  pointer-events: none; opacity: 0;
+  transition: opacity 0.6s ease;
+}
+#focus-mask.active { opacity: 1; }
+
+/* ══════════════════════════════════════════
+   BOOT SCREEN
+══════════════════════════════════════════ */
+#boot-screen {
+  position: fixed; inset: 0; z-index: 1000;
+  background: #000; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-family: var(--mono); color: var(--cyan);
+  transition: opacity 0.8s ease;
+}
+.ring-wrap { position: relative; width: 130px; height: 130px; margin-bottom: 36px; }
+.ring {
+  position: absolute; border-radius: 50%; border: 1px solid var(--cyan);
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+  animation: spin linear infinite;
+}
+.r1 { width: 54px; height: 54px; opacity: 0.9; animation-duration: 3.5s; }
+.r2 { width: 90px; height: 90px; opacity: 0.5; animation-duration: 7s; animation-direction: reverse; border-style: dashed; }
+.r3 { width: 130px; height: 130px; opacity: 0.22; animation-duration: 13s; }
+
+#boot-logo {
+  font-family: var(--display);
+  font-size: 2.2rem; font-weight: 900; letter-spacing: 12px;
+  color: var(--cyan); text-shadow: 0 0 30px var(--cyan), 0 0 60px rgba(0,212,255,0.4);
+}
+#boot-sub { font-size: 0.6rem; letter-spacing: 5px; opacity: 0.45; margin-top: 8px; }
+#boot-version { font-size: 0.55rem; letter-spacing: 4px; opacity: 0.3; margin-top: 4px; color: var(--gold); }
+
+#boot-log {
+  margin-top: 28px; font-size: 0.65rem; letter-spacing: 2px;
+  color: var(--cyan); opacity: 0.5; height: 80px; text-align: left;
+  width: 420px; line-height: 1.8;
+}
+
+.boot-opts { margin-top: 36px; display: flex; gap: 16px; }
+.boot-opt {
+  border: 1px solid rgba(0,212,255,0.4); padding: 12px 22px; cursor: pointer;
+  font-family: var(--mono); color: var(--cyan); font-size: 0.75rem;
+  letter-spacing: 3px; background: transparent;
+  transition: all 0.25s; text-transform: uppercase;
+}
+.boot-opt:hover {
+  background: rgba(0,212,255,0.1); box-shadow: 0 0 24px rgba(0,212,255,0.35);
+  letter-spacing: 4px; color: #fff;
+}
+.boot-opt.has-save { border-color: var(--gold); color: var(--gold); }
+.boot-opt.has-save:hover { background: rgba(255,184,0,0.08); box-shadow: 0 0 24px rgba(255,184,0,0.3); }
+
+/* ══════════════════════════════════════════
+   MAIN INTERFACE
+══════════════════════════════════════════ */
+#main-interface { display: none; }
+
+/* ── TOP BAR ── */
+#top-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: 48px; border-bottom: 1px solid rgba(0,212,255,0.12);
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; font-family: var(--mono);
+}
+#top-left { display: flex; align-items: center; gap: 20px; }
+#sys-id {
+  font-family: var(--display); font-size: 0.7rem; font-weight: 700;
+  letter-spacing: 6px; color: var(--cyan);
+  text-shadow: var(--cyan-glow);
+}
+#sys-status { font-size: 0.55rem; letter-spacing: 3px; color: var(--cyan); opacity: 0.45; }
+#top-center {
+  display: flex; align-items: center; gap: 24px;
+  font-size: 0.55rem; letter-spacing: 3px; color: var(--cyan); opacity: 0.35;
+}
+.tc-item { display: flex; align-items: center; gap: 6px; }
+.tc-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--cyan); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:0.3;} 50%{opacity:1;} }
+#top-right { display: flex; align-items: center; gap: 16px; }
+
+/* ── TIMER ── */
+#timer-block { text-align: right; }
+#timer-label-top { font-size: 0.5rem; letter-spacing: 3px; opacity: 0.4; color: var(--cyan); }
+#timer-display {
+  font-family: var(--display); font-size: 1.6rem; font-weight: 700;
+  letter-spacing: 5px; color: var(--cyan);
+  text-shadow: var(--cyan-glow);
+  transition: color 0.3s, text-shadow 0.3s;
+}
+#timer-display.alert {
+  color: var(--orange); text-shadow: 0 0 14px rgba(255,75,0,0.8);
+  animation: blink-orange 0.5s step-end infinite;
+}
+@keyframes blink-orange { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+/* GLITCH ALERT MESSAGE */
+#glitch-msg {
+  position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+  z-index: 800; font-family: var(--display); font-size: 0.7rem;
+  letter-spacing: 5px; color: var(--orange);
+  text-shadow: 0 0 20px var(--orange);
+  opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  background: rgba(255,75,0,0.06); border: 1px solid rgba(255,75,0,0.4);
+  padding: 8px 20px; white-space: nowrap;
+}
+#glitch-msg.active { opacity: 1; }
+
+/* ── CONTROL BUTTONS ── */
+.ctrl-btn {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 3px;
+  background: transparent; border: 1px solid rgba(0,212,255,0.3);
+  color: var(--cyan); padding: 6px 12px; cursor: pointer;
+  transition: all 0.2s; text-transform: uppercase;
+}
+.ctrl-btn:hover { background: var(--cyan-mid); box-shadow: var(--cyan-glow); }
+.ctrl-btn.active { background: rgba(0,212,255,0.15); border-color: var(--cyan); }
+.ctrl-btn.orange { border-color: rgba(255,75,0,0.4); color: var(--orange); }
+.ctrl-btn.orange:hover { background: var(--orange-dim); }
+.ctrl-btn.gold { border-color: rgba(255,184,0,0.4); color: var(--gold); }
+.ctrl-btn.gold:hover { background: rgba(255,184,0,0.08); }
+
+/* ── BOTTOM BAR ── */
+#bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+  height: 40px; border-top: 1px solid rgba(0,212,255,0.1);
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; font-family: var(--mono); font-size: 0.5rem;
+  letter-spacing: 3px; color: var(--cyan); opacity: 0.4;
+}
+#bottom-left, #bottom-right { display: flex; gap: 20px; }
+#save-indicator {
+  color: var(--gold); opacity: 0; transition: opacity 0.5s;
+  animation: none; letter-spacing: 3px;
+}
+#save-indicator.flash { opacity: 0.8; }
+
+/* ══════════════════════════════════════════
+   5-MONITOR TOPOLOGY
+══════════════════════════════════════════ */
+
+/* MONITOR 0 — CENTER — EXECUTION */
+#monitor-0 {
+  position: fixed;
+  top: 58px; bottom: 50px;
+  left: 50%; transform: translateX(-50%);
+  width: min(600px, 50vw);
+  z-index: 100;
+  display: flex; flex-direction: column;
+}
+.monitor-header {
+  font-family: var(--mono); font-size: 0.55rem;
+  letter-spacing: 4px; color: var(--cyan); opacity: 0.5;
+  padding: 8px 0 6px; border-bottom: 1px solid rgba(0,212,255,0.15);
+  margin-bottom: 8px; display: flex; justify-content: space-between;
+  align-items: center;
+}
+.monitor-id { color: var(--gold); }
+#work-area {
+  flex: 1; width: 100%;
+  background: rgba(0,212,255,0.03);
+  border: 1px solid rgba(0,212,255,0.2);
+  color: rgba(224,247,255,0.9);
+  font-family: var(--mono); font-size: 0.9rem; line-height: 1.7;
+  padding: 18px; resize: none; outline: none;
+  text-shadow: 0 0 3px rgba(0,212,255,0.3);
+  box-shadow: 0 0 40px rgba(0,212,255,0.05) inset,
+              0 0 2px rgba(0,212,255,0.08) inset;
+  backdrop-filter: blur(8px);
+  transition: border-color 0.3s, box-shadow 0.3s;
+  caret-color: var(--cyan);
+}
+#work-area:focus {
+  border-color: rgba(0,212,255,0.4);
+  box-shadow: 0 0 30px rgba(0,212,255,0.08) inset, 0 0 20px rgba(0,212,255,0.06);
+}
+#work-area::placeholder { color: rgba(0,212,255,0.2); font-size: 0.8rem; }
+
+/* FOCUS CLIPPING — shows through mask */
+#monitor-0.focus-active { z-index: 60; }
+
+/* MONITOR -1 — LEFT — DIAGNOSTIC LOG */
+#monitor-m1 {
+  position: fixed;
+  top: 58px; bottom: 50px;
+  left: 16px;
+  width: min(200px, 17vw);
+  z-index: 100;
+  display: flex; flex-direction: column;
+}
+#log-area {
+  flex: 1; width: 100%;
+  background: rgba(0,212,255,0.03);
+  border: 1px solid rgba(0,212,255,0.15);
+  color: rgba(0,212,255,0.7);
+  font-family: var(--mono); font-size: 0.7rem; line-height: 1.7;
+  padding: 12px; resize: none; outline: none;
+  backdrop-filter: blur(8px);
+  caret-color: var(--cyan);
+}
+#log-area::placeholder { color: rgba(0,212,255,0.15); }
+
+/* MONITOR +1 — RIGHT — ROOT LIBRARY */
+#monitor-p1 {
+  position: fixed;
+  top: 58px; bottom: 50px;
+  right: 16px;
+  width: min(200px, 17vw);
+  z-index: 100;
+  display: flex; flex-direction: column;
+}
+.lib-item {
+  display: block; width: 100%; text-align: left;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 2px;
+  background: transparent; border: none; border-bottom: 1px solid rgba(0,212,255,0.08);
+  color: rgba(0,212,255,0.7); padding: 10px 6px; cursor: pointer;
+  transition: all 0.2s; text-transform: uppercase;
+}
+.lib-item:hover { color: #fff; background: rgba(0,212,255,0.07); padding-left: 12px; }
+.lib-item .lib-arrow { color: var(--gold); margin-right: 6px; }
+.lib-body { flex: 1; overflow-y: auto; scrollbar-width: none; padding-top: 4px; }
+.lib-body::-webkit-scrollbar { display: none; }
+
+/* MONITOR -2 — FAR LEFT — CPU/CPF TELEMETRY */
+#monitor-m2 {
+  position: fixed;
+  top: 50%; transform: translateY(-50%);
+  left: calc(16px + min(200px, 17vw) + 12px);
+  width: 120px; z-index: 100;
+}
+/* MONITOR +2 — FAR RIGHT — CLOCK TERMINAL */
+#monitor-p2 {
+  position: fixed;
+  top: 50%; transform: translateY(-50%);
+  right: calc(16px + min(200px, 17vw) + 12px);
+  width: 120px; z-index: 100;
+}
+
+.side-panel {
+  background: rgba(0,212,255,0.04);
+  border: 1px solid rgba(0,212,255,0.12);
+  padding: 14px 10px;
+  backdrop-filter: blur(8px);
+  font-family: var(--mono);
+}
+.sp-title {
+  font-size: 0.5rem; letter-spacing: 3px; color: var(--cyan); opacity: 0.45;
+  margin-bottom: 14px; border-bottom: 1px solid rgba(0,212,255,0.1); padding-bottom: 6px;
+}
+.sp-metric { margin-bottom: 14px; }
+.sp-label { font-size: 0.5rem; letter-spacing: 2px; color: var(--cyan); opacity: 0.4; margin-bottom: 5px; }
+.sp-val { font-size: 0.75rem; color: var(--cyan); letter-spacing: 2px; margin-bottom: 4px; }
+.bar-wrap { background: rgba(0,212,255,0.07); height: 3px; border-radius: 2px; }
+.bar-fill {
+  height: 3px; border-radius: 2px; background: var(--cyan);
+  box-shadow: 0 0 5px var(--cyan);
+  transition: width 1.2s ease;
+}
+.bar-fill.warn { background: var(--orange); box-shadow: 0 0 5px var(--orange); }
+.bar-fill.gold { background: var(--gold); box-shadow: 0 0 5px var(--gold); }
+
+/* ATC panel inside +2 */
+.atc-row { margin-top: 14px; border-top: 1px solid rgba(0,212,255,0.08); padding-top: 10px; }
+.atc-key { font-size: 0.5rem; letter-spacing: 2px; color: var(--gold); opacity: 0.7; margin-bottom: 3px; }
+.atc-val { font-size: 0.65rem; color: rgba(0,212,255,0.8); letter-spacing: 1px; line-height: 1.5; }
+
+/* DUMP MSG */
+#dump-msg {
+  position: fixed; bottom: 48px; left: 50%; transform: translateX(-50%);
+  z-index: 300; font-family: var(--mono); font-size: 0.65rem;
+  letter-spacing: 3px; color: var(--cyan);
+  opacity: 0; transition: opacity 0.4s; pointer-events: none;
+}
+
+/* ── RECOVERY BOOT NOTIFICATION ── */
+#recovery-notice {
+  position: fixed; top: 58px; left: 50%; transform: translateX(-50%);
+  z-index: 500; background: rgba(0,212,255,0.06);
+  border: 1px solid rgba(0,212,255,0.3);
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 3px;
+  color: var(--cyan); padding: 10px 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.4s; margin-top: 8px;
+}
+#recovery-notice.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="bg-grid"></div>
+<div id="clock-rings">
+  <div class="cr cr1"></div>
+  <div class="cr cr2"></div>
+  <div class="cr cr3"></div>
+  <div class="cr cr4"></div>
+</div>
+<div id="scanline"></div>
+<div id="glitch-layer"></div>
+<div id="focus-mask"></div>
+
+<!-- ══════════════════════════════════════════
+     BOOT SCREEN
+══════════════════════════════════════════ -->
+<div id="boot-screen">
+  <div class="ring-wrap">
+    <div class="ring r1"></div>
+    <div class="ring r2"></div>
+    <div class="ring r3"></div>
+  </div>
+  <div id="boot-logo">OMC VR-OS</div>
+  <div id="boot-sub">BLACK VOID KERNEL · SOBERANIA OPERATIVA</div>
+  <div id="boot-version">SENTINEL V2.0 · PERSISTENT STATE ENGINE</div>
+  <div id="boot-log"></div>
+  <div class="boot-opts">
+    <button class="boot-opt has-save" id="btn-resume" onclick="bootSystem('resume')">[ BOOT SYSTEM ]</button>
+    <button class="boot-opt" onclick="bootSystem('new')">[ NEW MISSION ]</button>
+    <button class="boot-opt" onclick="bootSystem('diag')">[ DIAGNOSTIC ]</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MAIN INTERFACE
+══════════════════════════════════════════ -->
+<div id="main-interface">
+
+  <!-- TOP BAR -->
+  <div id="top-bar">
+    <div id="top-left">
+      <div id="sys-id">OMC VR-OS</div>
+      <div id="sys-status">SENTINEL V2.0 · OPERANDO</div>
+    </div>
+    <div id="top-center">
+      <div class="tc-item"><div class="tc-dot"></div>KERNEL ATIVO</div>
+      <div class="tc-item"><div class="tc-dot" style="animation-delay:0.7s"></div>ESTADO SALVO</div>
+      <div class="tc-item"><div class="tc-dot" style="animation-delay:1.4s"></div>SBL SYNC</div>
+    </div>
+    <div id="top-right">
+      <button class="ctrl-btn" id="focus-btn" onclick="toggleFocus()">◈ FOCUS CLIP</button>
+      <button class="ctrl-btn gold" onclick="dumpState()">⬇ DUMP STATE</button>
+      <div id="timer-block">
+        <div id="timer-label-top">CLOCK SIGNAL · 60s</div>
+        <div id="timer-display">01:00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLITCH ALERT MSG -->
+  <div id="glitch-msg">⚠ GLITCH DETECTADO: ALTA IMPEDÂNCIA — REINICIE O FOCO</div>
+  <div id="dump-msg">▸ ESTADO SALVO · KERNEL EM HIBERNATE</div>
+  <div id="recovery-notice">▸ RECOVERY BOOT — ESTADO ANTERIOR RESTAURADO</div>
+
+  <!-- MONITOR -2 — TELEMETRIA CPU/CPF -->
+  <div id="monitor-m2">
+    <div class="side-panel">
+      <div class="sp-title">◈ M-2 · TELEMETRIA</div>
+      <div class="sp-metric">
+        <div class="sp-label">CPF LOAD</div>
+        <div class="sp-val" id="cpf-val">72%</div>
+        <div class="bar-wrap"><div class="bar-fill warn" id="bar-cpf" style="width:72%"></div></div>
+      </div>
+      <div class="sp-metric">
+        <div class="sp-label">MIELINA</div>
+        <div class="sp-val" id="mielina-val">40%</div>
+        <div class="bar-wrap"><div class="bar-fill gold" id="bar-mielina" style="width:40%"></div></div>
+      </div>
+      <div class="sp-metric">
+        <div class="sp-label">BUFFER FOCO</div>
+        <div class="sp-val" id="buffer-val">28%</div>
+        <div class="bar-wrap"><div class="bar-fill" id="bar-buffer" style="width:28%"></div></div>
+      </div>
+      <div class="sp-metric">
+        <div class="sp-label">LATÊNCIA</div>
+        <div class="sp-val" id="latency-val">0ms</div>
+        <div class="bar-wrap"><div class="bar-fill" id="bar-latency" style="width:100%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MONITOR -1 — DIAGNOSTIC LOG -->
+  <div id="monitor-m1">
+    <div class="monitor-header">
+      <span>◈ MONITOR <span class="monitor-id">-1</span> · LOG DIAGNÓSTICO</span>
+    </div>
+    <textarea id="log-area" placeholder="// LOG DE FALHAS&#10;// Registre erros de foco,&#10;// impedâncias e breaches.&#10;&#10;> _"></textarea>
+  </div>
+
+  <!-- MONITOR 0 — CENTER EXECUTION -->
+  <div id="monitor-0">
+    <div class="monitor-header">
+      <span>◈ MONITOR <span class="monitor-id">0</span> · EXECUÇÃO CENTRAL</span>
+      <span id="char-count" style="color:rgba(0,212,255,0.3); font-size:0.5rem; letter-spacing:2px">0 chars</span>
+    </div>
+    <textarea id="work-area" placeholder="// OPERADOR — insira sua execução aqui.&#10;// Cada keystroke = sinal de atividade.&#10;// O sistema monitora sua latência em tempo real.&#10;&#10;MISSÃO ATIVA: ________________&#10;&#10;"></textarea>
+  </div>
+
+  <!-- MONITOR +1 — ROOT LIBRARY -->
+  <div id="monitor-p1">
+    <div class="monitor-header">
+      <span>◈ MONITOR <span class="monitor-id">+1</span> · ROOT LIBRARY</span>
+    </div>
+    <div class="lib-body">
+      <!-- ✏️ Troque os links pelos seus projetos/referências -->
+      <button class="lib-item" onclick="openLink('https://blogger.com')"><span class="lib-arrow">▸</span>OMC Tech Lab</button>
+      <button class="lib-item" onclick="openLink('#')"><span class="lib-arrow">▸</span>Engenharia Maestria</button>
+      <button class="lib-item" onclick="openLink('#')"><span class="lib-arrow">▸</span>Real Estate · Itacuruçá</button>
+      <button class="lib-item" onclick="openLink('https://colab.research.google.com')"><span class="lib-arrow">▸</span>Python · Colab</button>
+      <button class="lib-item" onclick="openLink('https://notebooklm.google.com')"><span class="lib-arrow">▸</span>NotebookLM · Memória</button>
+      <button class="lib-item" onclick="openLink('https://github.com')"><span class="lib-arrow">▸</span>GitHub · Kernel</button>
+      <button class="lib-item" onclick="openLink('#')"><span class="lib-arrow">▸</span>SBL System · Vol.4</button>
+      <div style="margin-top:14px; padding: 10px 6px; border-top: 1px solid rgba(0,212,255,0.1);">
+        <div style="font-family:var(--mono); font-size:0.5rem; letter-spacing:3px; color:rgba(0,212,255,0.35); margin-bottom:6px;">BURST DATA</div>
+        <div style="font-family:var(--mono); font-size:0.65rem; letter-spacing:2px; color:var(--gold);">PRÓXIMO: 16:00h</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MONITOR +2 — CLOCK TERMINAL / ATC -->
+  <div id="monitor-p2">
+    <div class="side-panel">
+      <div class="sp-title">◈ M+2 · ATC TERMINAL</div>
+      <div class="atc-row" style="margin-top:0; border-top:none; padding-top:0;">
+        <div class="atc-key">[AÇÃO]</div>
+        <!-- ✏️ Troque pelo seu objetivo -->
+        <div class="atc-val" id="atc-acao">Escrever 500 palavras</div>
+      </div>
+      <div class="atc-row">
+        <div class="atc-key">[TEMPO]</div>
+        <div class="atc-val" id="atc-tempo">Até 14:00h</div>
+      </div>
+      <div class="atc-row">
+        <div class="atc-key">[CONDIÇÃO]</div>
+        <div class="atc-val" id="atc-cond">Black Void ativo</div>
+      </div>
+      <div class="atc-row">
+        <div class="atc-key">PROJETO ATIVO</div>
+        <div class="atc-val" style="color:var(--gold)">Volume 4 · OMC Lab</div>
+      </div>
+      <div class="atc-row">
+        <div class="atc-key">SESSÃO</div>
+        <div class="atc-val" id="session-time">00:00:00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <div id="bottom-bar">
+    <div id="bottom-left">
+      <span>SBL SYSTEM · SOBERANIA OPERATIVA</span>
+      <span>PERSISTENT STATE ENGINE</span>
+    </div>
+    <div id="bottom-right">
+      <span id="save-indicator">▸ AUTO-SAVE</span>
+      <span id="bottom-time"></span>
+    </div>
+  </div>
+
+</div><!-- /main-interface -->
+
+<script>
+/* ═══════════════════════════════════════════════════
+   AUDIO ENGINE
+═══════════════════════════════════════════════════ */
+let audioCtx;
+function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+function tone(freq, type, start, dur, vol=0.12) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = type || 'sine'; o.frequency.value = freq;
+  o.connect(g); g.connect(audioCtx.destination);
+  g.gain.setValueAtTime(vol, audioCtx.currentTime + start);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + start + dur);
+  o.start(audioCtx.currentTime + start);
+  o.stop(audioCtx.currentTime + start + dur + 0.01);
+}
+function playConfirm() { initAudio(); tone(880,'sine',0,0.12); tone(1100,'sine',0.08,0.15); }
+function playAlert()   { initAudio(); tone(220,'sawtooth',0,0.2,0.1); tone(180,'sawtooth',0.15,0.2,0.1); }
+function playDump()    { initAudio(); [440,550,660,880].forEach((f,i) => tone(f,'sine',i*0.07,0.18,0.11)); }
+function playBoot()    { initAudio(); [300,450,600,900].forEach((f,i) => tone(f,'sine',i*0.1,0.25,0.08)); }
+
+/* ═══════════════════════════════════════════════════
+   PERSISTENT STATE — localStorage
+═══════════════════════════════════════════════════ */
+const STORE_KEY = 'omc_sentinel_v2';
+
+function saveState() {
+  const state = {
+    work: document.getElementById('work-area')?.value || '',
+    log:  document.getElementById('log-area')?.value || '',
+    ts: new Date().toISOString(),
+    session: sessionSeconds
+  };
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  flashSaveIndicator();
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+function flashSaveIndicator() {
+  const el = document.getElementById('save-indicator');
+  if (!el) return;
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 1200);
+}
+
+/* auto-save every 5 seconds */
+let autoSaveInterval;
+function startAutoSave() {
+  clearInterval(autoSaveInterval);
+  autoSaveInterval = setInterval(saveState, 5000);
+}
+
+/* ═══════════════════════════════════════════════════
+   BOOT SEQUENCE
+═══════════════════════════════════════════════════ */
+const bootLines = [
+  '> INITIALIZING BLACK VOID KERNEL...',
+  '> LOADING PERSISTENT STATE ENGINE...',
+  '> SBL SYSTEM SYNC... OK',
+  '> BIO-MONITOR CALIBRATED',
+  '> CLOCK SIGNAL STABLE · 60s RULE ACTIVE',
+  '> SENTINEL V2.0 READY'
+];
+
+function animateBootLog(cb) {
+  const el = document.getElementById('boot-log');
+  let i = 0;
+  function next() {
+    if (i >= bootLines.length) { setTimeout(cb, 300); return; }
+    el.textContent += bootLines[i] + '\n'; i++;
+    setTimeout(next, 280);
+  }
+  next();
+}
+
+function checkSaveStatus() {
+  const saved = loadState();
+  const btn = document.getElementById('btn-resume');
+  if (saved && saved.work) {
+    const d = new Date(saved.ts);
+    const timeStr = d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    btn.textContent = `[ BOOT SYSTEM · ${timeStr} ]`;
+  } else {
+    btn.classList.remove('has-save');
+    btn.style.borderColor = '';
+    btn.style.color = '';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  checkSaveStatus();
+  animateBootLog(() => {});
+});
+
+function bootSystem(mode) {
+  playBoot();
+  const saved = loadState();
+  const boot = document.getElementById('boot-screen');
+  const main = document.getElementById('main-interface');
+
+  boot.style.opacity = '0';
+  setTimeout(() => {
+    boot.style.display = 'none';
+    main.style.display = 'block';
+
+    if (mode === 'new') {
+      document.getElementById('work-area').value = '';
+      document.getElementById('log-area').value = '';
+    } else if ((mode === 'resume' || mode === 'diag') && saved) {
+      document.getElementById('work-area').value = saved.work || '';
+      document.getElementById('log-area').value = saved.log || '';
+      const notice = document.getElementById('recovery-notice');
+      notice.classList.add('show');
+      setTimeout(() => notice.classList.remove('show'), 3500);
+    }
+
+    updateCharCount();
+    startTimer();
+    startActivityWatch();
+    startAutoSave();
+    startBioSimulation();
+    startSessionClock();
+    updateBottomTime();
+  }, 900);
+}
+
+/* ═══════════════════════════════════════════════════
+   TIMER — 60s RULE
+═══════════════════════════════════════════════════ */
+let timerInterval, secondsLeft = 60, inAlert = false;
+
+function startTimer() {
+  secondsLeft = 60; inAlert = false;
+  updateTimerDisplay();
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    secondsLeft--;
+    updateTimerDisplay();
+    if (secondsLeft <= 10 && secondsLeft > 0) {
+      document.getElementById('timer-display').classList.add('alert');
+    }
+    if (secondsLeft <= 0 && !inAlert) {
+      triggerAlert();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const abs = Math.abs(secondsLeft);
+  const m = String(Math.floor(abs/60)).padStart(2,'0');
+  const s = String(abs%60).padStart(2,'0');
+  const sign = secondsLeft < 0 ? '-' : '';
+  document.getElementById('timer-display').textContent = sign + m + ':' + s;
+}
+
+function resetTimer() {
+  inAlert = false;
+  const td = document.getElementById('timer-display');
+  td.classList.remove('alert');
+  const gm = document.getElementById('glitch-msg');
+  gm.classList.remove('active');
+  startTimer();
+}
+
+function triggerAlert() {
+  inAlert = true;
+  playAlert();
+  const gl = document.getElementById('glitch-layer');
+  gl.classList.add('active');
+  setTimeout(() => gl.classList.remove('active'), 1200);
+  const gm = document.getElementById('glitch-msg');
+  gm.classList.add('active');
+}
+
+/* ═══════════════════════════════════════════════════
+   ACTIVITY WATCH
+═══════════════════════════════════════════════════ */
+function startActivityWatch() {
+  document.getElementById('work-area').addEventListener('keydown', () => resetTimer());
+  document.getElementById('work-area').addEventListener('input', updateCharCount);
+}
+
+function updateCharCount() {
+  const wa = document.getElementById('work-area');
+  if (!wa) return;
+  document.getElementById('char-count').textContent = wa.value.length + ' chars';
+}
+
+/* ═══════════════════════════════════════════════════
+   DUMP STATE
+═══════════════════════════════════════════════════ */
+function dumpState() {
+  playDump();
+  saveState();
+  const msg = document.getElementById('dump-msg');
+  msg.style.opacity = '1';
+  setTimeout(() => { msg.style.opacity = '0'; }, 2800);
+}
+
+/* ═══════════════════════════════════════════════════
+   FOCUS CLIPPING — Module Sombra
+═══════════════════════════════════════════════════ */
+let focusActive = false;
+function toggleFocus() {
+  focusActive = !focusActive;
+  const mask = document.getElementById('focus-mask');
+  const btn  = document.getElementById('focus-btn');
+  const mon  = document.getElementById('monitor-0');
+  if (focusActive) {
+    mask.classList.add('active');
+    mon.classList.add('focus-active');
+    btn.classList.add('active');
+    btn.textContent = '◈ FOCUS [ON]';
+    playConfirm();
+  } else {
+    mask.classList.remove('active');
+    mon.classList.remove('focus-active');
+    btn.classList.remove('active');
+    btn.textContent = '◈ FOCUS CLIP';
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   BIO-MONITOR SIMULATION
+═══════════════════════════════════════════════════ */
+let cpfVal=72, mielinaVal=40, bufferVal=28;
+
+function startBioSimulation() {
+  setInterval(() => {
+    mielinaVal = Math.min(100, mielinaVal + 0.04);
+    bufferVal  = Math.max(0,   bufferVal  - 0.015);
+    cpfVal     = Math.max(0, Math.min(100, cpfVal + (Math.random()-0.5)*0.3));
+
+    const latPct = Math.min(100, Math.max(0, (secondsLeft/60)*100));
+
+    setBar('bar-cpf',     cpfVal,      'cpf-val');
+    setBar('bar-mielina', mielinaVal,  'mielina-val');
+    setBar('bar-buffer',  bufferVal,   'buffer-val');
+    setBar('bar-latency', latPct,      'latency-val');
+  }, 1000);
+}
+
+function setBar(id, pct, valId) {
+  const bar = document.getElementById(id);
+  const valEl = document.getElementById(valId);
+  if (bar) bar.style.width = pct.toFixed(1) + '%';
+  if (valEl) {
+    if (id === 'bar-latency') {
+      valEl.textContent = Math.round(60 - (pct/100)*60) + 'ms';
+    } else {
+      valEl.textContent = pct.toFixed(0) + '%';
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   SESSION CLOCK
+═══════════════════════════════════════════════════ */
+let sessionSeconds = 0;
+function startSessionClock() {
+  setInterval(() => {
+    sessionSeconds++;
+    const h = String(Math.floor(sessionSeconds/3600)).padStart(2,'0');
+    const m = String(Math.floor((sessionSeconds%3600)/60)).padStart(2,'0');
+    const s = String(sessionSeconds%60).padStart(2,'0');
+    const el = document.getElementById('session-time');
+    if (el) el.textContent = h+':'+m+':'+s;
+  }, 1000);
+}
+
+/* ═══════════════════════════════════════════════════
+   BOTTOM TIME
+═══════════════════════════════════════════════════ */
+function updateBottomTime() {
+  setInterval(() => {
+    const el = document.getElementById('bottom-time');
+    if (el) el.textContent = new Date().toLocaleTimeString('pt-BR');
+  }, 1000);
+}
+
+/* ═══════════════════════════════════════════════════
+   UTILITY
+═══════════════════════════════════════════════════ */
+function openLink(url) { if (url !== '#') window.open(url, '_blank'); }
+
+/* save on page unload */
+window.addEventListener('beforeunload', () => { if (document.getElementById('work-area')) saveState(); });
+</script>
+</body>
+</html>
