@@ -1,0 +1,243 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   OMC VR-OS | CSS KERNEL v6.0 SENTINEL
+   Soberania Visual & Mielinização de Interface
+   Foco: Custo Metabólico Zero · Ativação de Gânglios Basais
+═══════════════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap');
+
+/* ──────────────────────────────────────────────────────────────────────────
+   0. DESIGN TOKENS
+────────────────────────────────────────────────────────────────────────── */
+:root {
+    /* Sinais Primários */
+    --cyan:          #00D4FF;
+    --cyan-dim:      rgba(0, 212, 255, 0.6);
+    --cyan-border:   rgba(0, 212, 255, 0.25);
+    --cyan-glow:     0 0 12px rgba(0, 212, 255, 0.5), 0 0 30px rgba(0, 212, 255, 0.2);
+    --cyan-glow-sm:  0 0 6px  rgba(0, 212, 255, 0.4);
+
+    /* Alertas */
+    --alert:         #FF4B00;
+    --alert-dim:     rgba(255, 75, 0, 0.6);
+    --alert-glow:    0 0 12px rgba(255, 75, 0, 0.6), 0 0 30px rgba(255, 75, 0, 0.3);
+
+    /* Âmbar / Bio */
+    --amber:         #FFB800;
+    --amber-glow:    0 0 12px rgba(255, 184, 0, 0.5);
+
+    /* Matrix */
+    --matrix-green:  #00FF41;
+    --matrix-glow:   0 0 15px rgba(0, 255, 65, 0.5);
+
+    /* Arquitetura Cyber-Glass */
+    --bg-panel:      rgba(0, 10, 20, 0.88);
+    --bg-input:      rgba(0, 20, 35, 0.95);
+    --glass-border:  1px solid var(--cyan-border);
+    --glass-blur:    blur(14px);
+
+    /* Tipografia */
+    --font-mono:     'Share Tech Mono', monospace;
+    --font-hud:      'Orbitron', sans-serif;
+
+    /* Transições */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-smooth:   cubic-bezier(0.4, 0, 0.2, 1);
+    --transition:    0.4s var(--ease-out-expo);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   1. FUNDAÇÃO: VAZIO SISTÊMICO
+────────────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 0;
+    background: #000;
+    background: radial-gradient(circle at 50% 40%, #00121a 0%, #000000 100%);
+    color: var(--cyan);
+    font-family: var(--font-mono);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    transition: background 3s ease-in-out, filter 3s ease-in-out;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   2. ESTADOS DO CORPO & REPOUSO
+────────────────────────────────────────────────────────────────────────── */
+body.system-active { cursor: none; }
+
+body.system-active #hud-layer,
+body.system-active #onboarding-overlay { cursor: default; }
+
+body.system-sleep {
+    background: radial-gradient(circle at 50% 40%, #00080d 0%, #000000 100%);
+}
+
+body.system-sleep .a-canvas {
+    filter: grayscale(0.9) brightness(0.35) blur(3px);
+}
+
+body.system-sleep .crt-overlay { opacity: 0.08; }
+
+body.system-sleep #hud-layer { opacity: 0.3; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   3. ATMOSFERA: CRT + VINHETA
+────────────────────────────────────────────────────────────────────────── */
+.crt-overlay {
+    position: fixed;
+    inset: 0;
+    background:
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.14) 50%),
+        linear-gradient(90deg, rgba(255,0,0,0.04), rgba(0,255,0,0.01), rgba(0,0,255,0.04));
+    background-size: 100% 3px, 3px 100%;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.75;
+}
+
+.vignette {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle, transparent 38%, rgba(0, 0, 0, 0.88) 100%);
+    pointer-events: none;
+    z-index: 9998;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   4. ONBOARDING OVERLAY
+────────────────────────────────────────────────────────────────────────── */
+#onboarding-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-panel);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--cyan-border);
+    transition: opacity 1s var(--ease-smooth);
+}
+
+.overlay-inner {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 40px 60px;
+    border: var(--glass-border);
+    background: rgba(0, 8, 16, 0.6);
+}
+
+.overlay-title {
+    font-family: var(--font-hud);
+    letter-spacing: 10px;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--cyan);
+    text-shadow: var(--cyan-glow);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   5. HUD LAYER (Overlay 2D)
+────────────────────────────────────────────────────────────────────────── */
+#hud-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+#hud-top-bar, #hud-bottom-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: rgba(0, 10, 20, 0.5);
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   6. COMANDO & JARVIS (Escrita Ativa)
+────────────────────────────────────────────────────────────────────────── */
+#cmd-wrapper {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    width: min(600px, 90vw);
+    background: var(--bg-input);
+    border: 1px solid var(--cyan-border);
+    padding: 12px 18px;
+    backdrop-filter: var(--glass-blur);
+    pointer-events: all;
+}
+
+/* Efeito de Escuta JARVIS */
+.jarvis-listening #cmd-wrapper {
+    border-color: var(--matrix-green);
+    box-shadow: var(--matrix-glow);
+    animation: pulse-border 1.5s infinite alternate;
+}
+
+@keyframes pulse-border {
+    from { border-color: var(--cyan-border); }
+    to { border-color: var(--matrix-green); box-shadow: 0 0 15px var(--matrix-green); }
+}
+
+#cmd-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--cyan);
+    font-family: var(--font-mono);
+    outline: none;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   7. ANIMAÇÕES TÁTICAS & GLITCH
+────────────────────────────────────────────────────────────────────────── */
+@keyframes jitter {
+    0% { transform: translate(0,0); }
+    25% { transform: translate(-2px, 1px); }
+    50% { transform: translate(2px, -1px); filter: hue-rotate(90deg); }
+    75% { transform: translate(-1px, -2px); }
+    100% { transform: translate(0,0); }
+}
+
+.latency-critical {
+    color: var(--alert) !important;
+    text-shadow: var(--alert-glow);
+    animation: jitter 0.15s infinite;
+}
+
+/* Efeito de Dissolução ao Salvar (Dump Memory) */
+.synthesize-mission {
+    animation: dissolve 0.8s forwards var(--ease-out-expo);
+}
+
+@keyframes dissolve {
+    0% { opacity: 1; filter: blur(0); transform: scale(1); }
+    100% { opacity: 0; filter: blur(20px); transform: scale(1.2); }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   8. SCROLLBAR & MOBILE
+────────────────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--cyan); box-shadow: var(--cyan-glow-sm); }
+
+@media (max-width: 768px) {
+    #hud-title { display: none; }
+    #cmd-wrapper { width: 95vw; bottom: 15px; }
+    .overlay-inner { padding: 20px; width: 90vw; }
+}

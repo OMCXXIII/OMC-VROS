@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMC VR-OS | SENTINEL v5.0 QUANTUM</title>
+    
+    <script>
+        /* ── Mobile detection BEFORE a-scene renders ── */
+        window.IS_MOBILE = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+        if (window.IS_MOBILE) {
+            document.documentElement.setAttribute('data-mobile', 'true');
+        }
+    </script>
+
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css.css">
+</head>
+<body class="system-idle">
+
+    <!-- ════════════════════════════════════════
+         ONBOARDING OVERLAY
+    ════════════════════════════════════════ -->
+    <div id="onboarding-overlay">
+        <div class="overlay-inner">
+            <div class="overlay-scan-line"></div>
+            <h1 class="overlay-title">SINCRO_INICIAL</h1>
+            <p class="overlay-sub">Aguardando detecção de consciência...</p>
+            <div class="overlay-progress" id="overlay-progress">
+                <span id="progress-text">HANDSHAKE... 0%</span>
+                <div class="progress-bar"><div id="progress-fill"></div></div>
+            </div>
+            <button id="connect-btn" onclick="establishConnection()">ESTABELECER CONEXÃO</button>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         DOM HUD LAYER  (2-D overlay sobre a cena)
+    ════════════════════════════════════════ -->
+    <div id="hud-layer">
+        <!-- Barra superior -->
+        <div id="hud-top-bar">
+            <span id="hud-clock-real">--:--:--</span>
+            <span id="hud-title">OMC VR-OS · SENTINEL v5.0 QUANTUM</span>
+            <span id="hud-status">●&nbsp;LINK ESTÁVEL</span>
+        </div>
+
+        <!-- Barra inferior / bio-feedback -->
+        <div id="hud-bottom-bar">
+            <span id="bio-feedback-dom">OPERADOR_IDENTIFICADO</span>
+            <span id="hud-battery">CPF_BATTERY: 100%</span>
+            <span id="hud-session">SESSION: 00:00</span>
+            <span id="hud-latency" class="latency-ok">LAT: 12ms</span>
+        </div>
+
+        <!-- Input de comando -->
+        <div id="cmd-wrapper">
+            <span class="cmd-prompt">SENTINEL:~$&nbsp;</span>
+            <input id="cmd-input" type="text" autocomplete="off" spellcheck="false"
+                   placeholder="aguardando input do operador..." 
+                   onkeydown="handleCmdInput(event)" />
+        </div>
+    </div>
+
+    <!-- CRT + vinheta atmosférica -->
+    <div class="crt-overlay"></div>
+    <div class="vignette"></div>
+
+    <!-- ════════════════════════════════════════
+         A-FRAME SCENE
+    ════════════════════════════════════════ -->
+    <a-scene
+        id="main-scene"
+        fog="type: exponential; color: #000; density: 0.10"
+        renderer="antialias: true; colorManagement: true; exposure: 1.2; precision: medium"
+        loading-screen="dotsColor: #00D4FF; backgroundColor: black"
+        vr-mode-ui="enabled: false">
+
+        <!-- ── ASSETS / MIXINS ── -->
+        <a-assets>
+
+            <!-- Sigil base: wireframe ciano -->
+            <a-mixin id="quantum-sigil"
+                     material="color: #00D4FF; wireframe: true; opacity: 0.55; emissive: #00D4FF; emissiveIntensity: 0.6"
+                     animation__rotate="property: rotation; to: 0 360 0; dur: 15000; loop: true; easing: linear">
+            </a-mixin>
+
+            <!-- Sigil âmbar (Bio) -->
+            <a-mixin id="sigil-amber"
+                     material="color: #FFB800; wireframe: true; opacity: 0.55; emissive: #FFB800; emissiveIntensity: 0.6"
+                     animation__rotate="property: rotation; to: 0 360 0; dur: 12000; loop: true; easing: linear">
+            </a-mixin>
+
+            <!-- Sigil vermelho (Firewall) -->
+            <a-mixin id="sigil-red"
+                     material="color: #FF4B00; wireframe: true; opacity: 0.55; emissive: #FF4B00; emissiveIntensity: 0.6"
+                     animation__rotate="property: rotation; to: 0 360 0; dur: 10000; loop: true; easing: linear">
+            </a-mixin>
+
+            <!-- Label de texto padrão -->
+            <a-mixin id="label-text"
+                     text="align: center; color: #00D4FF; font: monoid; width: 4"
+                     position="0 -1.2 0">
+            </a-mixin>
+
+        </a-assets>
+
+        <!-- ── AMBIENTE ── -->
+        <a-sky color="#000000"></a-sky>
+
+        <!-- Grid floor corrigido: a-plane com wireframe + textura de grade -->
+        <a-plane id="grid-floor"
+                 rotation="-90 0 0"
+                 width="200" height="200"
+                 material="color: #00D4FF; opacity: 0.06; wireframe: true; transparent: true">
+        </a-plane>
+
+        <!-- Luz ambiente mínima -->
+        <a-light type="ambient" color="#001a2e" intensity="0.4"></a-light>
+        <a-light type="directional" position="0 5 -3" intensity="0.3" color="#00D4FF"></a-light>
+
+
+        <!-- ══════════════════════════════════════
+             REATOR-CORE  (centro, pulsante)
+        ══════════════════════════════════════ -->
+        <a-entity id="reactor-core" position="0 0.6 -5">
+
+            <!-- Núcleo -->
+            <a-sphere id="reactor-nucleus" radius="0.18"
+                      material="color: #00D4FF; emissive: #00D4FF; emissiveIntensity: 3; transparent: true; opacity: 0.9"
+                      animation__pulse="property: material.emissiveIntensity; from: 2; to: 4; dur: 900; direction: alternate; loop: true; easing: easeInOutSine"
+                      animation__scale="property: scale; from: 1 1 1; to: 1.15 1.15 1.15; dur: 900; direction: alternate; loop: true; easing: easeInOutSine">
+            </a-sphere>
+
+            <!-- Luz pontual dinâmica -->
+            <a-light type="point" id="reactor-light" intensity="1.5" distance="8" color="#00D4FF"
+                     animation="property: intensity; from: 1; to: 2.5; dur: 900; direction: alternate; loop: true; easing: easeInOutSine">
+            </a-light>
+
+            <!-- Anel orbital 1 -->
+            <a-ring radius-inner="0.35" radius-outer="0.37" rotation="90 0 0"
+                    material="color: #00D4FF; opacity: 0.4; transparent: true"
+                    animation="property: rotation; to: 90 360 0; dur: 3500; loop: true; easing: linear">
+            </a-ring>
+
+            <!-- Anel orbital 2 (inclinado) -->
+            <a-ring radius-inner="0.55" radius-outer="0.57" rotation="60 0 0"
+                    material="color: #00D4FF; opacity: 0.25; transparent: true"
+                    animation="property: rotation; to: 60 360 0; dur: 6000; loop: true; easing: linear">
+            </a-ring>
+
+            <!-- Anel orbital 3 (perpendicular) -->
+            <a-ring radius-inner="0.75" radius-outer="0.77" rotation="0 0 0"
+                    material="color: #00D4FF; opacity: 0.15; transparent: true"
+                    animation="property: rotation; to: 0 0 360; dur: 9000; loop: true; easing: linear">
+            </a-ring>
+
+            <!-- Label -->
+            <a-text value="REACTOR-CORE\n[QUANTUM_ENGINE]"
+                    align="center" color="#00D4FF" font="monoid"
+                    width="3.5" position="0 -1.2 0" opacity="0.7">
+            </a-text>
+        </a-entity>
+
+
+        <!-- ══════════════════════════════════════
+             MON-0  ·  KERNEL MONITOR  (centro-alto)
+        ══════════════════════════════════════ -->
+        <a-entity id="mon-0" class="ghost-window" position="0 2 -4" scale="1.2 1.2 1.2">
+
+            <a-sphere id="singularidade" radius="0.35" mixin="quantum-sigil"
+                      material="wireframe: false; opacity: 0.15; color: #00D4FF">
+            </a-sphere>
+
+            <a-torus radius="0.6" radius-tubular="0.01" mixin="quantum-sigil"
+                     animation__rotate="dur: 8000">
+            </a-torus>
+
+            <!-- Segundo torus perpendicular -->
+            <a-torus radius="0.6" radius-tubular="0.01" mixin="quantum-sigil"
+                     rotation="90 0 0"
+                     animation__rotate="property: rotation; to: 90 360 0; dur: 11000; loop: true; easing: linear">
+            </a-torus>
+
+            <a-text value="[KERNEL_MONITOR]" mixin="label-text" position="0 -0.8 0.1"></a-text>
+            <a-text id="execution-text"
+                    value="Aguardando Input do Operador..."
+                    position="0 0 0.5" align="center" width="3.2" color="#00D4FF">
+            </a-text>
+        </a-entity>
+
+
+        <!-- ══════════════════════════════════════
+             MON-MINUS-2  ·  RAW_DATA  (esq. extremo)
+        ══════════════════════════════════════ -->
+        <a-entity id="mon-minus-2" class="ghost-window" position="-5 2 -2" rotation="0 45 0">
+
+            <a-icosahedron radius="0.55" mixin="quantum-sigil"></a-icosahedron>
+
+            <!-- Icosahedron maior, mais lento — halo -->
+            <a-icosahedron radius="0.8" mixin="quantum-sigil"
+                           material="opacity: 0.15; wireframe: true; color: #00D4FF; emissive: #00D4FF; emissiveIntensity: 0.2"
+                           animation__rotate="property: rotation; to: 0 -360 0; dur: 20000; loop: true; easing: linear">
+            </a-icosahedron>
+
+            <a-text id="raw-data-display" value="RAW_DATA\n[DADOS_BRUTOS]\n──────────\nSTARLINK_SYNC: OK\nNODE: 0x4F3A"
+                    mixin="label-text" position="0 -1.3 0" width="3">
+            </a-text>
+        </a-entity>
+
+
+        <!-- ══════════════════════════════════════
+             MON-MINUS-1  ·  DIAGNOSTIC / MIELINA
+        ══════════════════════════════════════ -->
+        <a-entity id="mon-minus-1" class="ghost-window" position="-2.5 2 -3.5" rotation="0 20 0">
+
+            <!-- Hélice dupla: dois octahedra em contrarrotação -->
+            <a-entity id="helix-wrapper">
+                <a-octahedron radius="0.4" mixin="quantum-sigil"
+                              animation__rotate="property: rotation; to: 0 360 0; dur: 8000; loop: true; easing: linear">
+                </a-octahedron>
+                <a-octahedron radius="0.28" mixin="quantum-sigil"
+                              material="opacity: 0.35; wireframe: true; color: #00D4FF; emissive: #00D4FF; emissiveIntensity: 0.3"
+                              animation__rotate="property: rotation; to: 0 -360 0; dur: 5000; loop: true; easing: linear">
+                </a-octahedron>
+            </a-entity>
+
+            <a-text id="log-display"
+                    value="DIAGNOSTIC\n[MIELINA]\n──────────\nMIELINA: 150m/s\nSYNAPSE: ATIVO"
+                    mixin="label-text" position="0 -1.3 0" width="3">
+            </a-text>
+        </a-entity>
+
+
+        <!-- ══════════════════════════════════════
+             MON-PLUS-1  ·  NEXUS / DOMÍNIOS
+        ══════════════════════════════════════ -->
+        <a-entity id="mon-plus-1" class="ghost-window" position="2.5 2 -3.5" rotation="0 -20 0">
+
+            <a-tetrahedron radius="0.55" mixin="quantum-sigil"></a-tetrahedron>
+
+            <!-- Tetrahedro externo contrarotativo -->
+            <a-tetrahedron radius="0.8" mixin="quantum-sigil"
+                           material="opacity: 0.15; wireframe: true; color: #00D4FF; emissive: #00D4FF; emissiveIntensity: 0.15"
+                           animation__rotate="property: rotation; to: 0 -360 0; dur: 18000; loop: true; easing: linear">
+            </a-tetrahedron>
+
+            <a-text id="nexus-display"
+                    value="NEXUS\n[DOMÍNIOS]\n──────────\nNODES: 7 ONLINE\nLATENCY: 12ms"
+                    mixin="label-text" position="0 -1.3 0" width="3">
+            </a-text>
+        </a-entity>
+
+
+        <!-- ══════════════════════════════════════
+             MON-PLUS-2  ·  TEMPO / ATC_CLOCK
+        ══════════════════════════════════════ -->
+        <a-entity id="mon-plus-2" class="ghost-window" position="5 2 -2" rotation="0 -45 0">
+
+            <a-entity animation__rot="property: rotation; to: 0 360 0; dur: 10000; loop: true; easing: linear">
+                <a-cone radius-bottom="0.4" height="0.6" mixin="quantum-sigil" position="0 0.3 0"></a-cone>
+                <a-cone radius-bottom="0.4" height="0.6" mixin="quantum-sigil" position="0 -0.3 0" rotation="180 0 0"></a-cone>
+            </a-entity>
+
+            <a-text id="atc-timer"
+                    value="00:00\n[ATC_CLOCK]\n──────────\nSESSION: ATIVA"
+                    mixin="label-text" position="0 -1.3 0" width="3">
+            </a-text>
+        </a-entity>
+
+
+        <!-- ══════════════════════════════════════
+             BIO-MONITOR  ·  BIOMETRIA (âmbar, pulsante)
+        ══════════════════════════════════════ -->
+        <a-entity id="bio-monitor" position="-1.6 0.6 -2.2" rotation="-25 15 0">
+
+            <!-- Dodecahedron pulsante âmbar -->
+            <a-dodecahedron radius="0.28" mixin="sigil-amber"
+                            animation__pulse="property: scale; from: 1 1 1; to: 1.12 1.12 1.12; dur: 700; direction: alternate; loop: true; easing: easeInOutSine">
+            </a-dodecahedron>
+
+            <!-- Halo exterior -->
+            <a-dodecahedron radius="0.42" mixin="sigil-amber"
+                            material="opacity: 0.15; wireframe: true; color: #FFB800; emissive: #FFB800; emissiveIntensity: 0.2"
+                            animation__rotate="property: rotation; to: 360 0 360; dur: 14000; loop: true; easing: linear">
+            </a-dodecahedron>
+
+            <!-- Luz âmbar local -->
+            <a-light type="point" intensity="0.6" distance="2.5" color="#FFB800"></a-light>
+
+            <a-text id="bio-display"
+                    value="STATUS\n[BIOMETRIA]\n──────────\nBPM: 72\nMIELINA: 150m/s\nO2: 99%"
+                    align="center" color="#FFB800" font="monoid"
+                    width="2.8" position="0 -1.1 0">
+            </a-text>
+        </a-entity>
+
+
+        <!-- ══════════════════════════════════════
+             SOBERANIA / VAZIO  ·  Torus Knot Möbius (vermelho/âmbar)
+        ══════════════════════════════════════ -->
+        <a-entity id="firewall-sigil" position="1.6 0.6 -2.2" rotation="-25 -15 0">
+
+            <!-- Torus Knot principal: âmbar dourado -->
+            <a-torus-knot radius="0.28" radius-tubular="0.025"
+                          p="3" q="7"
+                          mixin="sigil-red"
+                          animation__rotate="property: rotation; to: 0 360 0; dur: 9000; loop: true; easing: linear">
+            </a-torus-knot>
+
+            <!-- Torus Knot halo -->
+            <a-torus-knot radius="0.42" radius-tubular="0.012"
+                          p="2" q="5"
+                          material="color: #FF4B00; wireframe: true; opacity: 0.2; emissive: #FF4B00; emissiveIntensity: 0.3"
+                          animation__rotate="property: rotation; to: 0 -360 0; dur: 13000; loop: true; easing: linear">
+            </a-torus-knot>
+
+            <!-- Luz vermelha local -->
+            <a-light type="point" intensity="0.5" distance="2.5" color="#FF4B00"></a-light>
+
+            <a-text value="SOBERANIA\n[VAZIO_DUMP]\n──────────\nFIREWALL: ATIVO\nINTRUSÕES: 0"
+                    align="center" color="#FF4B00" font="monoid"
+                    width="2.8" position="0 -1.1 0">
+            </a-text>
+        </a-entity>
+
+
+        <!-- ══════════════════════════════════════
+             CÂMERA + CURSOR
+        ══════════════════════════════════════ -->
+        <a-entity id="camera-rig" position="0 0 0">
+            <a-entity camera id="main-camera" look-controls position="0 1.6 0">
+                <a-cursor id="cursor" color="#00D4FF" fuse="true" fuse-timeout="800"
+                          raycaster="objects: .ghost-window, #reactor-core, #bio-monitor, #firewall-sigil"
+                          animation__fusing="property: scale; from: 1 1 1; to: 2 2 2; dur: 800; startEvents: fusing"
+                          animation__reset="property: scale; to: 1 1 1; dur: 100; startEvents: mouseleave">
+                </a-cursor>
+            </a-entity>
+        </a-entity>
+
+    </a-scene>
+
+    <script src="js.js" defer></script>
+</body>
+</html>
