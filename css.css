@@ -1,0 +1,199 @@
+/* OMC VR-OS | CSS KERNEL v4.5 
+   Diretriz: Soberania Visual & Mielinização de Interface
+   Foco: Custo Metabólico Zero e Ativação de Gânglios Basais
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap');
+
+:root {
+    /* Paleta de Sinais e Energia */
+    --cyan: #00D4FF;
+    --cyan-glow: 0 0 15px rgba(0, 212, 255, 0.4), 0 0 30px rgba(0, 212, 255, 0.2);
+    --cyan-border: rgba(0, 212, 255, 0.3);
+    
+    --alert: #FF4B00; /* Laranja Emergência: Quebra de Inércia */
+    --alert-glow: 0 0 25px rgba(255, 75, 0, 0.7);
+    
+    --matrix-green: #00FF41;
+    --matrix-glow: 0 0 15px rgba(0, 255, 65, 0.5);
+
+    /* Arquitetura Cyber-Glass */
+    --bg-panel: rgba(0, 10, 20, 0.85);
+    --glass-border: 1px solid rgba(0, 212, 255, 0.15);
+    --glass-blur: blur(12px);
+    
+    /* Variáveis de Transição (Baixa Latência) */
+    --transition-speed: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 1. FUNDAÇÃO: O VAZIO SISTÊMICO (Pulvinar do Tálamo Off) */
+body {
+    margin: 0;
+    padding: 0;
+    background: #000;
+    background: radial-gradient(circle at center, #00121a 0%, #000000 100%);
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Overlay de Scanlines (Aura Militar de Alta Fidelidade) */
+.crt-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), 
+                linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.04));
+    background-size: 100% 3px, 3px 100%;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.8;
+}
+
+/* Vinheta de Foco (Túnel Cognitivo) */
+.vignette {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.9) 100%);
+    pointer-events: none;
+    z-index: 9998;
+}
+
+/* 2. ELEMENTOS DE INTERFACE (HUD 2D Overlays) */
+.hud-container {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+}
+
+/* 3. TERMINAL DE EXECUÇÃO (Física de Digitação) */
+#execution-text {
+    text-shadow: var(--cyan-glow);
+    letter-spacing: 1px;
+    line-height: 1.4;
+}
+
+/* Cursor Piscante Tático */
+#execution-text::after {
+    content: "_";
+    animation: blink 0.8s infinite steps(2);
+    color: var(--cyan);
+}
+
+@keyframes blink {
+    to { opacity: 0; }
+}
+
+/* 4. ALERTA DE GLITCH: Latência Crítica (Regra dos 60s) */
+.latency-critical {
+    animation: jitter 0.2s infinite, glow-pulse-alert 0.4s infinite alternate !important;
+    color: var(--alert) !important;
+}
+
+@keyframes jitter {
+    0% { transform: translate(0); filter: hue-rotate(0deg); }
+    20% { transform: translate(-4px, 2px); filter: hue-rotate(90deg); }
+    40% { transform: translate(4px, -2px); }
+    60% { transform: translate(-2px, -4px); filter: hue-rotate(180deg); }
+    80% { transform: translate(2px, 4px); }
+    100% { transform: translate(0); }
+}
+
+@keyframes glow-pulse-alert {
+    from { text-shadow: 0 0 5px var(--alert), 0 0 10px var(--alert); }
+    to { text-shadow: 0 0 20px var(--alert), 0 0 40px var(--alert); }
+}
+
+/* 5. GHOST WINDOWS: Transições de Foco */
+.a-canvas {
+    filter: brightness(1.1) contrast(1.1);
+}
+
+/* Efeito de Vidro Fosco nos Painéis (Simulado via Shader ou Blur no A-Frame) */
+.glass-effect {
+    backdrop-filter: var(--glass-blur);
+    background: var(--bg-panel);
+    border: var(--glass-border);
+    box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+/* 6. DINÂMICA DO REATOR (Feedback de Sinal de Clock) */
+#orbital-ring {
+    transition: color 0.3s ease;
+}
+
+/* 7. SÍNTESE: DISSOLUÇÃO DE PARTICULAS */
+.synthesize-mission {
+    animation: dissolve 1s forwards cubic-bezier(0.4, 0, 1, 1);
+}
+
+@keyframes dissolve {
+    0% { opacity: 1; filter: blur(0) brightness(1) saturate(1); }
+    30% { filter: blur(5px) brightness(3) saturate(2); }
+    100% { opacity: 0; filter: blur(30px) brightness(10) saturate(0); transform: scale(1.5); }
+}
+
+/* 8. BIO-FEEDBACK (HUD Inferior) */
+#hud-stats {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+/* 9. SCROLLBAR TÁTICA */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+::-webkit-scrollbar-thumb { 
+    background: var(--cyan); 
+    border-radius: 2px;
+    box-shadow: 0 0 10px var(--cyan);
+}
+
+/* 10. ESTADOS DE INTERAÇÃO (Mouse/Gaze) */
+.cursor-hover {
+    transform: scale(1.5);
+    background-color: var(--matrix-green) !important;
+    box-shadow: var(--matrix-glow);
+}
+
+/* 11. ACRESCENTADO: BLOOM QUÂNTICO E AURA DE ENERGIA (v4.5 Quantum Skin) */
+
+.quantum-glow {
+    filter: drop-shadow(0 0 5px var(--cyan)) drop-shadow(0 0 15px rgba(0, 212, 255, 0.5));
+    animation: aura-pulse 3s infinite alternate ease-in-out;
+}
+
+@keyframes aura-pulse {
+    from { 
+        opacity: 0.7; 
+        filter: drop-shadow(0 0 5px var(--cyan)); 
+    }
+    to { 
+        opacity: 1; 
+        filter: drop-shadow(0 0 20px var(--cyan)) brightness(1.2); 
+    }
+}
+
+/* Camada de profundidade tática para o Onboarding */
+#onboarding-overlay {
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.9);
+    transition: opacity 0.8s ease;
+}
+
+/* Efeito de Cintilação de Dados nos Sigilos */
+.data-glimmer {
+    background-image: linear-gradient(0deg, transparent 0%, var(--cyan) 50%, transparent 100%);
+    background-size: 100% 200%;
+    animation: glimmer-move 4s linear infinite;
+}
+
+@keyframes glimmer-move {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 200%; }
+}
