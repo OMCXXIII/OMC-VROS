@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMC VR-OS | SENTINEL v4.5 QUANTUM</title>
+    
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
+    
+    <link rel="stylesheet" href="css.css">
+</head>
+<body>
+    <div id="onboarding-overlay" style="position: fixed; z-index: 10000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #00D4FF; font-family: 'Share Tech Mono', monospace;">
+        <h1 style="letter-spacing: 10px; border-bottom: 2px solid #00D4FF;">SINCRO_INICIAL</h1>
+        <p>Aguardando detecção de consciência...</p>
+        <button onclick="document.getElementById('onboarding-overlay').style.display='none'" style="background: transparent; border: 1px solid #00D4FF; color: #00D4FF; padding: 15px 30px; cursor: pointer; font-family: inherit; font-size: 1.2rem; margin-top: 20px; transition: 0.3s;" onmouseover="this.style.background='#00D4FF'; this.style.color='#000'">ESTABELECER CONEXÃO</button>
+    </div>
+
+    <div class="crt-overlay"></div>
+    <div class="vignette"></div>
+
+    <a-scene fog="type: exponential; color: #000; density: 0.12" renderer="antialias: true; colorManagement: true">
+        
+        <a-assets>
+            <a-mixin id="quantum-sigil" 
+                     material="color: #00D4FF; wireframe: true; opacity: 0.6; emissive: #00D4FF; emissiveIntensity: 0.5"
+                     animation__rotate="property: rotation; to: 360 360 0; dur: 10000; loop: true; easing: linear"
+                     animation__hover="property: scale; to: 1.5 1.5 1.5; dur: 500; startEvents: mouseenter"
+                     animation__leave="property: scale; to: 1 1 1; dur: 500; startEvents: mouseleave"></a-mixin>
+            
+            <a-mixin id="label-text" text="align: center; color: #00D4FF; font: monoid; width: 4" position="0 -1 0"></a-mixin>
+        </a-assets>
+
+        <a-sky color="#000"></a-sky>
+        <a-grid position="0 0 0" rotation="-90 0 0" width="100" height="100" material="color: #00D4FF; opacity: 0.05; wireframe: true"></a-grid>
+
+        <a-entity id="mon-0" position="0 1.8 -4" scale="1.2 1.2 1.2">
+            <a-sphere id="singularidade" radius="0.4" mixin="quantum-sigil" material="wireframe: false; opacity: 0.2">
+                <a-text value="[EXECUÇÃO]" mixin="label-text" position="0 -0.8 0"></a-text>
+                <a-text id="execution-text" value="Aguardando Input do Operador..." position="0 0 0.5" align="center" width="3" opacity="0"
+                        animation__fade="property: opacity; to: 1; startEvents: mouseenter"
+                        animation__out="property: opacity; to: 0; startEvents: mouseleave"></a-text>
+            </a-sphere>
+            <a-torus radius="0.6" radius-tubular="0.01" mixin="quantum-sigil"></a-torus>
+        </a-entity>
+
+        <a-entity id="mon-minus-2" class="ghost-window" position="-5 2 -2" rotation="0 45 0">
+            <a-icosahedron radius="0.6" mixin="quantum-sigil"></a-icosahedron>
+            <a-text value="RAW_DATA\n[DADOS_BRUTOS]" mixin="label-text"></a-text>
+        </a-entity>
+
+        <a-entity id="mon-minus-1" class="ghost-window" position="-2.5 2 -3.5" rotation="0 20 0">
+            <a-octahedron radius="0.5" mixin="quantum-sigil"></a-octahedron>
+            <a-text id="log-display" value="DIAGNOSTIC\n[MIELINA]" mixin="label-text"></a-text>
+        </a-entity>
+
+        <a-entity id="mon-plus-1" class="ghost-window" position="2.5 2 -3.5" rotation="0 -20 0">
+            <a-tetrahedron radius="0.6" mixin="quantum-sigil"></a-tetrahedron>
+            <a-text value="NEXUS\n[DOMÍNIOS]" mixin="label-text"></a-text>
+        </a-entity>
+
+        <a-entity id="mon-plus-2" class="ghost-window" position="5 2 -2" rotation="0 -45 0">
+            <a-cone radius-bottom="0.4" height="0.6" mixin="quantum-sigil" position="0 0.3 0"></a-cone>
+            <a-cone radius-bottom="0.4" height="0.6" mixin="quantum-sigil" position="0 -0.3 0" rotation="180 0 0"></a-cone>
+            <a-text id="atc-timer" value="00:00\n[TEMPO]" mixin="label-text" position="0 -1.2 0"></a-text>
+        </a-entity>
+
+        <a-entity id="bio-sigil" position="-1.5 0.5 -2" rotation="-30 0 0">
+            <a-dodecahedron radius="0.2" mixin="quantum-sigil" material="color: #FFB800; emissive: #FFB800">
+                <a-text value="STATUS\n[BIOMETRIA]" mixin="label-text" scale="0.5 0.5 0.5" position="0 -0.4 0"></a-text>
+            </a-dodecahedron>
+        </a-entity>
+
+        <a-entity id="firewall-sigil" position="1.5 0.5 -2" rotation="-30 0 0">
+            <a-torus-knot radius="0.2" radius-tubular="0.02" mixin="quantum-sigil" material="color: #FF4B00; emissive: #FF4B00">
+                <a-text value="SOBERANIA\n[VAZIO]" mixin="label-text" scale="0.5 0.5 0.5" position="0 -0.4 0"></a-text>
+            </a-torus-knot>
+        </a-entity>
+
+        <a-entity id="hud-stats" position="0 0.2 -1.5" rotation="-20 0 0">
+            <a-plane width="2" height="0.1" material="color: #000; opacity: 0.8; transparent: true"></a-plane>
+            <a-text id="bio-feedback" value="OPERADOR_IDENTIFICADO | CPF_BATTERY: 100% | LINK: ESTÁVEL" 
+                    align="center" scale="0.3 0.3 0.3" position="0 0 0.05" color="#00D4FF"></a-text>
+        </a-entity>
+
+        <a-entity camera id="main-camera" look-controls position="0 1.6 0">
+            <a-cursor id="cursor" color="#00D4FF" fuse="true" fuse-timeout="800"
+                      raycaster="objects: .ghost-window, #mon-0, #bio-sigil, #firewall-sigil"
+                      animation__fusing="property: scale; from: 1 1 1; to: 2 2 2; dur: 800; startEvents: fusing">
+            </a-cursor>
+        </a-entity>
+
+    </a-scene>
+
+    <script src="js.js" defer></script>
+</body>
+</html>
